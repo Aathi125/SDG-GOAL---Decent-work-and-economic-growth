@@ -1,5 +1,9 @@
 import express from "express";
+<<<<<<< HEAD
 import { protect, authorizeRoles } from "../middleware/authMiddleware.js";
+=======
+import { protect, authorizeRoles } from "../middlewear/authMiddleware.js";
+>>>>>>> 92be4607cb51a4f989312801a582250f183951c4
 import {
   createOrganizationProfile,
   getOrganizationProfileById,
@@ -60,3 +64,7 @@ router.delete(
 );
 
 export default router;
+<<<<<<< HEAD
+=======
+
+>>>>>>> 92be4607cb51a4f989312801a582250f183951c4

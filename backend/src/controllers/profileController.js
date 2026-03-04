@@ -335,3 +335,7 @@ export const deleteProfile = async (req, res) => {
     return res.status(500).json({ message: "Server error" });
   }
 };
+<<<<<<< HEAD
+=======
+
+>>>>>>> 92be4607cb51a4f989312801a582250f183951c4

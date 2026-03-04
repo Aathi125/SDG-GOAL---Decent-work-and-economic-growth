@@ -66,6 +66,10 @@ export const getInternshipByIdController = async (req, res) => {
 };
 
 // Requires: Authentication (protect middleware) and organization role
+<<<<<<< HEAD
+=======
+// Get all internships for the logged-in organization
+>>>>>>> 92be4607cb51a4f989312801a582250f183951c4
 export const getMyInternships  = async (req, res) => {
   try {
 
@@ -99,6 +103,10 @@ export const incrementViewCountController = async (req, res) => {
 };
 
 // Requires: Authentication (protect middleware) and organization role
+<<<<<<< HEAD
+=======
+// Get dashboard stats for the logged-in organization
+>>>>>>> 92be4607cb51a4f989312801a582250f183951c4
 export const getDashboardStats = async (req, res) => {
   try {
     const stats = await getDashboardStatsService(
