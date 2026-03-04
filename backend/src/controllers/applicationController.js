@@ -11,47 +11,59 @@ export const applyForInternship = async (req, res) => {
     console.log('BODY:', req.body);
     console.log('FILE:', req.file);
 
-    const youthId = req.body?.youthId;
+    const { youthId, name, email, phoneNumber } = req.body;
     const { internshipId } = req.params;
 
     if (!youthId) return res.status(400).json({ message: 'youthId is required' });
-    if (!req.file) return res.status(400).json({ message: 'CV upload is required (PDF only)' });
+    if (!name || !email || !phoneNumber)
+      return res.status(400).json({ message: 'Name, email and phone number are required' });
 
-    const cvUrl = req.file.path; // Cloudinary URL with proper MIME type
+    if (!req.file)
+      return res.status(400).json({ message: 'CV upload is required (PDF only)' });
 
-    // check internship
+    const cvUrl = req.file.path;
+
+    // internship check
     const internship = await Internship.findById(internshipId);
     if (!internship) return res.status(404).json({ message: 'Internship not found' });
-    if (internship.status !== 'active') return res.status(400).json({ message: 'This internship is not active' });
+    if (internship.status !== 'active')
+      return res.status(400).json({ message: 'This internship is not active' });
 
-    // check duplicate
+    // duplicate check
     const existingApplication = await Application.findOne({ youthId, internshipId });
-    if (existingApplication) return res.status(400).json({ message: 'You have already applied' });
+    if (existingApplication)
+      return res.status(400).json({ message: 'You have already applied' });
 
-    // check youth
     const youth = await User.findById(youthId);
     if (!youth) return res.status(404).json({ message: 'Youth not found' });
-    if (youth.role !== 'youth') return res.status(400).json({ message: 'User is not youth' });
-    if (!youth.profile) return res.status(400).json({ message: 'Profile incomplete' });
+    if (youth.role !== 'youth')
+      return res.status(400).json({ message: 'User is not youth' });
 
-    const score = calculateEligibilityScore(youth.profile, internship.requirements);
+    const score = calculateEligibilityScore(
+      youth.profile,
+      internship.requirements
+    );
 
     const application = await Application.create({
       youthId,
       internshipId,
+      name,
+      email,
+      phoneNumber,
       cvUrl,
       eligibilityScore: score.total,
       scoreBreakdown: score.breakdown,
-      status: 'Applied',
+      status: 'Applied'
     });
 
-    await Internship.findByIdAndUpdate(internshipId, { $inc: { applicantCount: 1 } });
+    await Internship.findByIdAndUpdate(internshipId, {
+      $inc: { applicantCount: 1 }
+    });
 
-    const populatedApplication = await Application.findById(application._id)
-      .populate('youthId', 'name email profile')
-      .populate('internshipId', 'title organization description');
-
-    res.status(201).json({ success: true, data: populatedApplication });
+    res.status(201).json({
+      success: true,
+      data: application
+    });
 
   } catch (error) {
     console.error('Error in applyForInternship:', error);
@@ -59,6 +71,40 @@ export const applyForInternship = async (req, res) => {
   }
 };
 
+
+export const updateApplication = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, email, phoneNumber } = req.body;
+
+    const application = await Application.findById(id);
+
+    if (!application) {
+      return res.status(404).json({ message: "Application not found" });
+    }
+
+    // Update text fields if provided
+    if (name !== undefined) application.name = name;
+    if (email !== undefined) application.email = email;
+    if (phoneNumber !== undefined) application.phoneNumber = phoneNumber;
+
+    // Update CV if uploaded
+    if (req.file) {
+      application.cvUrl = req.file.path; // assuming Cloudinary returns path
+    }
+
+    await application.save();
+
+    res.status(200).json({
+      message: "Application updated successfully",
+      application
+    });
+
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
 // @desc    Get youth's applications
 // @route   GET /api/applications/my-applications
 export const getMyApplications = async (req, res) => {
