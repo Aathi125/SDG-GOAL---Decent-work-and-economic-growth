@@ -104,4 +104,3 @@ const youthProfileSchema = new mongoose.Schema(
 const YouthProfile = mongoose.model("YouthProfile", youthProfileSchema);
 
 export default YouthProfile;
-

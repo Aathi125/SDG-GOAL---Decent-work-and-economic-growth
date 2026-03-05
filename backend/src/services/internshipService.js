@@ -4,16 +4,61 @@ import { getCoordinates } from "../utils/geocode.js";
 
 // Service function to create a new internship
 export const createInternship = async (data, organizationId) => {
+  let coordinates;
+
+  if (data.location) {
+    const coords = await getCoordinates(data.location);
+    if (coords) {
+      coordinates = {
+        type: "Point",
+        coordinates: [coords.lng, coords.lat] // GeoJSON: lng first
+      };
+    }
+  }
+
+  const internship = await Internship.create({
+    ...data,
+    organizationId,
+    ...(coordinates && { coordinates }) // only add if geocoding succeeded
+  });
+
+  return internship;
+};
+
+//without opencage integration
+// Service function to create a new internship
+/*export const createInternship = async (data, organizationId) => {
   const internship = await Internship.create({
     ...data,
     organizationId,
   });
 
   return internship;
-};
+};*/
 
 // Service function to update an existing internship
-export const updateInternship = async (
+export const updateInternship = async (data, internshipId, organizationId) => {
+  // Re-geocode only if location is being updated
+  if (data.location) {
+    const coords = await getCoordinates(data.location);
+    if (coords) {
+      data.coordinates = {
+        type: "Point",
+        coordinates: [coords.lng, coords.lat]
+      };
+    }
+  }
+
+  const internship = await Internship.findOneAndUpdate(
+    { _id: internshipId, organizationId },
+    data,
+    { returnDocument: "after" }
+  );
+
+  return internship;
+};
+
+/*export const updateInternship = async (
   data, 
   internshipId,
   organizationId
@@ -24,7 +69,7 @@ export const updateInternship = async (
     {returnDocument: 'after'}
   );
   return internship;
-};
+};**/
 
 //Service function to delete an internship
 export const deleteInternship = async (
@@ -171,10 +216,26 @@ export const searchInternshipsService = async (queryParams) => {
     filter.status = status;
   }
 
-  // 📍 Location filter
-  if (location) {
+// 📍 Location filter — using $geoWithin instead of $near
+if (location) {
+  const coords = await getCoordinates(location);
+
+  if (coords) {
+    const radiusInRadians = 50 / 6378.1; // 50km converted to radians
+
+    filter.coordinates = {
+      $geoWithin: {
+        $centerSphere: [
+          [coords.lng, coords.lat], // [longitude, latitude]
+          radiusInRadians
+        ]
+      }
+    };
+  } else {
+    // Fallback → plain text match if geocoding fails
     filter.location = { $regex: location, $options: "i" };
   }
+}
 
   // Pagination
   const skip = (page - 1) * limit;
