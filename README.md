@@ -347,7 +347,7 @@ npm start
 
 ## 🔐 Environment Configuration
 
-### Backend `.env` File
+### Backend `.env` File 
 
 ```env
 # Server
@@ -540,7 +540,7 @@ Body:
 }
 ```
 
-**Get My Internships:**
+**Get My Internships:** 
 ```
 GET {{base_url}}/internships/my-internships
 
@@ -785,5 +785,5 @@ git pull             # Pull from remote
 ---
 
 **Happy Coding! 🎉**
-
+ 
 *SDG Goal 8: Decent Work and Economic Growth*
