@@ -4,39 +4,43 @@ import dotenv from "dotenv";
 import authRoutes from "./src/routes/auth.js";
 import profileRoutes from "./src/routes/profile.js";
 import organizationRoutes from "./src/routes/organizationRoutes.js";
+import internshipRoutes from "./src/routes/internshipRoute.js";
 
-// Load environment variables
+
+//load environment variables
 dotenv.config();
 
-// Create express app
+//create express app
 const app = express();
 
-// Middleware to parse JSON bodies
+//middleware to parse JSON bodies
 app.use(express.json());
 
-// Connect to MongoDB
-mongoose
-  .connect(process.env.MONGO_URI)
-  .then(() => console.log("MongoDB connected ✅"))
-  .catch((err) => console.log("Error connecting to MongoDB:", err));
+//connect to MongoDB
+mongoose.connect(process.env.MONGO_URI)
+    .then(() => console.log('MongoDB connected ✅'))
+    .catch((err) => console.log('Error connecting to MongoDB:', err));
 
-// Simple health route
+//define a simple route
 app.get("/", (req, res) => {
   res.send("API is running...");
 });
 
 // Auth routes
-app.use("/auth", authRoutes);
+app.use("/api/auth", authRoutes);
 
 // Youth profile routes
-app.use("/", profileRoutes);
+app.use("/api", profileRoutes);
 
 // Organization profile routes
-app.use("/", organizationRoutes);
+app.use("/api", organizationRoutes);
 
-// Start the server
+// Internship routes
+app.use("/api/internships", internshipRoutes);
+
+
+//start the server
 const PORT = process.env.PORT || 5001;
-app.listen(PORT, () => {
+app.listen(PORT,() => {
   console.log(`Server is running on port ${PORT}`);
 });
-

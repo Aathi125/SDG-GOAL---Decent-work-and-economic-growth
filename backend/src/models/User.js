@@ -38,4 +38,3 @@ export const USER_ROLES = ROLES;
 const User = mongoose.model("User", userSchema);
 
 export default User;
-
