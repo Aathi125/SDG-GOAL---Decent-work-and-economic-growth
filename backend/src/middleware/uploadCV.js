@@ -23,4 +23,7 @@ const uploadCV = multer({
   },
 });
 
+// Middleware that accepts any file field name
+export const flexibleUpload = uploadCV.any();
+
 export default uploadCV;

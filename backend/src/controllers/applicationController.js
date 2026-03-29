@@ -20,13 +20,16 @@ export const applyForInternship = async (req, res) => {
       });
     }
 
-    if (!req.file) {
+    // Get file from req.files (flexibleUpload uses .any())
+    const file = req.files && req.files.length > 0 ? req.files[0] : null;
+
+    if (!file) {
       return res.status(400).json({
         message: 'CV upload is required (PDF only)'
       });
     }
 
-    const cvUrl = req.file.path;
+    const cvUrl = file.path;
 
     // Extract text from the uploaded PDF
     let extractedText = '';
@@ -153,9 +156,9 @@ export const updateApplication = async (req, res) => {
     if (email !== undefined) application.email = email;
     if (phoneNumber !== undefined) application.phoneNumber = phoneNumber;
 
-    // Update CV if uploaded
-    if (req.file) {
-      application.cvUrl = req.file.path; // assuming Cloudinary returns path
+    // Update CV if uploaded (flexibleUpload uses .any())
+    if (req.files && req.files.length > 0) {
+      application.cvUrl = req.files[0].path; // assuming Cloudinary returns path
     }
 
     await application.save();

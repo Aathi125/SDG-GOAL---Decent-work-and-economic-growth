@@ -7,15 +7,15 @@ import {
   checkApplicationStatus,
   updateApplication
 } from '../controllers/applicationController.js';
-import uploadCV from '../middleware/uploadCV.js';
+import uploadCV, { flexibleUpload } from '../middleware/uploadCV.js';
 
 const router = express.Router();
 
-router.post('/apply/:internshipId', uploadCV.single('cv'), applyForInternship);
+router.post('/apply/:internshipId', flexibleUpload, applyForInternship);
 router.get('/my-applications', getMyApplications);
 router.get('/check/:internshipId', checkApplicationStatus);
 router.get('/:id', getApplicationById);
-router.put('/:id', uploadCV.single('cv'), updateApplication);
+router.put('/:id', flexibleUpload, updateApplication);
 router.delete('/:id', withdrawApplication);
 
 export default router;
