@@ -145,7 +145,7 @@ export const updateApplication = async (req, res) => {
     const { id } = req.params;
     const { name, email, phoneNumber } = req.body;
 
-    const application = await Application.findById(id);
+    const application = await Application.findById(id).populate('youthId').populate('internshipId');
 
     if (!application) {
       return res.status(404).json({ message: "Application not found" });
@@ -159,6 +159,44 @@ export const updateApplication = async (req, res) => {
     // Update CV if uploaded (flexibleUpload uses .any())
     if (req.files && req.files.length > 0) {
       application.cvUrl = req.files[0].path; // assuming Cloudinary returns path
+      
+      let extractedText = '';
+      try {
+        const response = await fetch(application.cvUrl);
+        if (response.ok) {
+          const buffer = await response.arrayBuffer();
+          const uint8Array = new Uint8Array(buffer);
+          const pdf = await pdfjsLib.getDocument({ data: uint8Array }).promise;
+
+          for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+            const page = await pdf.getPage(pageNum);
+            const textContent = await page.getTextContent();
+            const pageText = textContent.items.map(item => item.str).join(' ');
+            extractedText += pageText + ' ';
+          }
+
+          const trimmedText = extractedText.trim();
+          if (trimmedText.length < 100) {
+            extractedText = ''; // Set to empty to trigger 0 score
+          }
+        }
+      } catch (err) {
+        console.error('PDF extraction failed during update:', err.message);
+      }
+
+      application.cvText = extractedText;
+
+      // Recalculate score if youth and internship are populated properly
+      if (application.youthId && application.internshipId) {
+        const score = await calculateEligibilityScore(
+          application.youthId.profile || {},
+          application.internshipId.requirements || {},
+          extractedText
+        );
+        application.eligibilityScore = score.total;
+        application.scoreBreakdown = score.breakdown;
+        application.aiReasoning = score.aiReasoning || '';
+      }
     }
 
     await application.save();

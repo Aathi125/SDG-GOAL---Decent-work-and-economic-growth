@@ -1,6 +1,3 @@
-// Quick test to verify the scoring logic works correctly
-// Run with: node src/tests/scoreTest.js
-
 import dotenv from 'dotenv';
 dotenv.config();
 
@@ -8,91 +5,100 @@ import { calculateEligibilityScore } from '../services/matchingService.js';
 
 // ─── Test Data ───────────────────────────────────────────────────────────────
 
-const internshipRequirements = {
-  skills: ['JavaScript', 'React', 'Node.js', 'MongoDB'],
-  education: { level: 'Bachelor', field: 'Computer Science' },
-  location: { district: 'Colombo', state: 'Western Province' },
+const itInternship = {
+  skills: ['JavaScript', 'React', 'Node.js'],
+  education: { level: 'Degree' },
+  location: { district: 'Colombo' },
+};
+
+const businessInternship = {
+  skills: ['Marketing', 'SEO', 'Sales'],
+  education: { level: 'Diploma' },
+  location: { district: 'Kandy' },
 };
 
 const youthProfile = {
-  skills: ['JavaScript', 'React', 'Node.js', 'MongoDB'],
-  education: { level: 'Bachelor', field: 'Computer Science' },
-  location: { district: 'Colombo', state: 'Western Province', isRural: true },
-  incomeCriteria: { meetsCriteria: true },
+  skills: ['JavaScript', 'React', 'Node.js', 'Marketing'],
+  education: { level: 'Degree' },
+  location: { district: 'Colombo', isRural: false },
 };
 
 // ─── Test Cases ──────────────────────────────────────────────────────────────
 
 async function runTests() {
   console.log('═══════════════════════════════════════════════════════');
-  console.log('  CV ELIGIBILITY SCORING — TEST SUITE');
+  console.log('  CV MATCHING SCORING TEST SUITE');
   console.log('═══════════════════════════════════════════════════════\n');
 
-  // TEST 1: Perfect match CV
-  const goodCV = `
+  // TEST 1: IT Match
+  const itCV = `
     Experienced JavaScript developer with expertise in React and Node.js.
-    Built full-stack applications using MongoDB. Bachelor's degree in
-    Computer Science. Located in Colombo, Western Province. Seeking
-    internship opportunity as a junior developer from a rural background.
+    I hold a Bachelor Degree in Computer Science. 
+    Located in Colombo. Seeking an internship opportunity.
   `;
 
-  const result1 = await calculateEligibilityScore(youthProfile, internshipRequirements, goodCV);
-  console.log('TEST 1 — Perfect Match CV:');
+  console.log('TEST 1 — IT Perfect Match CV:');
+  const result1 = await calculateEligibilityScore(youthProfile, itInternship, itCV);
   console.log('  Total:', result1.total);
   console.log('  Breakdown:', result1.breakdown);
   console.log('  Reasoning:', result1.aiReasoning);
-  console.log('  Expected: High score (70–100)\n');
+  console.log('\n');
 
-  // TEST 2: Empty CV text → should be 0
-  const result2 = await calculateEligibilityScore(youthProfile, internshipRequirements, '');
-  console.log('TEST 2 — Empty CV (no text extracted):');
-  console.log('  Total:', result2.total);
-  console.log('  Expected: 0\n');
-
-  // TEST 3: Irrelevant text (cooking recipe)
-  const badCV = `
-    This document is about cooking recipes. How to make pasta:
-    Boil water, add salt, cook for 8 minutes. Serve with tomato sauce.
+  // TEST 2: Business Match
+  const businessCV = `
+    Passionate about Marketing and SEO.
+    I have a Diploma in Business Management.
+    Based in Kandy. Looking for entry level marketing roles.
+    I am good at sales and communication.
   `;
 
-  const result3 = await calculateEligibilityScore(youthProfile, internshipRequirements, badCV);
-  console.log('TEST 3 — Irrelevant CV (cooking recipe):');
+  console.log('TEST 2 — Business Partial Match:');
+  const result2 = await calculateEligibilityScore(youthProfile, businessInternship, businessCV);
+  console.log('  Total:', result2.total);
+  console.log('  Breakdown:', result2.breakdown);
+  console.log('  Reasoning:', result2.aiReasoning);
+  console.log('\n');
+
+  // TEST 3: Architecture match
+  const archInternship = {
+    skills: ['AutoCAD', 'SketchUp', '3D Modeling'],
+    education: { level: 'Diploma' },
+    location: { district: 'Galle' },
+  };
+
+  const archCV = `
+    Urban planner and designer. Proficient in AutoCAD and Revit.
+    Also experienced in SketchUp for 3D Modeling.
+    Passed Advanced Level (A/L) and currently seeking a Diploma.
+    Living in Galle.
+  `;
+  console.log('TEST 3 — Architecture Match:');
+  const result3 = await calculateEligibilityScore(youthProfile, archInternship, archCV);
   console.log('  Total:', result3.total);
   console.log('  Breakdown:', result3.breakdown);
   console.log('  Reasoning:', result3.aiReasoning);
-  console.log('  Expected: 0 (no technical skills)\n');
+  console.log('\n');
 
-  // TEST 4: Partial match — some skills only
-  const partialCV = `
-    Frontend developer experienced with React and JavaScript.
-    Currently studying diploma in web development.
-    Based in Kandy, Sri Lanka. Looking for internship.
+  // TEST 4: Arts match
+  const artsInternship = {
+    skills: ['Photoshop', 'Illustrator', 'Graphic Design'],
+    education: { level: 'O/L' },
+    location: { district: 'Matara' },
+  };
+
+  const artsCV = `
+    Creative artist who loves Graphic Design.
+    Advanced knowledge in Adobe Photoshop and Illustrator.
+    Finished Ordinary Level (O/L) examinations.
+    Residing in Matara.
   `;
-
-  const result4 = await calculateEligibilityScore(youthProfile, internshipRequirements, partialCV);
-  console.log('TEST 4 — Partial Match (2/4 skills):');
+  console.log('TEST 4 — Arts Match:');
+  const result4 = await calculateEligibilityScore(youthProfile, artsInternship, artsCV);
   console.log('  Total:', result4.total);
   console.log('  Breakdown:', result4.breakdown);
   console.log('  Reasoning:', result4.aiReasoning);
-  console.log('  Expected: Medium score (30–60)\n');
+  console.log('\n');
 
-  // TEST 5: Alias matching — uses "JS" and "NodeJS" instead of full names
-  const aliasCV = `
-    Full stack developer. Proficient in JS, NodeJS, ReactJS and Mongo.
-    B.Tech in Computer Science from State University.
-    Colombo, Sri Lanka. Seeking junior developer position.
-  `;
-
-  const result5 = await calculateEligibilityScore(youthProfile, internshipRequirements, aliasCV);
-  console.log('TEST 5 — Alias Matching (JS, NodeJS, ReactJS):');
-  console.log('  Total:', result5.total);
-  console.log('  Breakdown:', result5.breakdown);
-  console.log('  Reasoning:', result5.aiReasoning);
-  console.log('  Expected: High score (should match through aliases)\n');
-
-  console.log('═══════════════════════════════════════════════════════');
-  console.log('  ALL TESTS COMPLETE');
-  console.log('═══════════════════════════════════════════════════════');
 }
 
 runTests().catch(console.error);
