@@ -73,4 +73,3 @@ const OrganizationProfile = mongoose.model(
 );
 
 export default OrganizationProfile;
-

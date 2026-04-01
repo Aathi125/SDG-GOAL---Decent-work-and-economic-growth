@@ -17,9 +17,20 @@ const internshipSchema = new mongoose.Schema({
   requiredEducation : {
     type : String 
   },
-  location : {
-    type : String
+  location: {
+  type: String
+},
+coordinates: {
+  type: {
+    type: String,
+    enum: ["Point"],
+    default: "Point"
   },
+  coordinates: {
+    type: [Number], // [longitude, latitude]
+    default: undefined
+  }
+},
   duration : {
     type : String
   },
@@ -49,5 +60,7 @@ const internshipSchema = new mongoose.Schema({
     timestamps : true
   }
 );
+
+internshipSchema.index({ coordinates: "2dsphere" });
 
 export default mongoose.model("Internship", internshipSchema);

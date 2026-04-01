@@ -1,22 +1,28 @@
 import axios from "axios";
 
-export const getCoordinates = async (address) => {
-  const apiKey = process.env.GOOGLE_MAPS_API_KEY;
+export const getCoordinates = async (locationString) => {
+  try {
+    const response = await axios.get(
+      "https://api.opencagedata.com/geocode/v1/json",
+      {
+        params: {
+          q: locationString,
+          key: process.env.OPENCAGE_API_KEY,
+          limit: 1,
+        },
+      }
+    );
 
-  const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(
-    address
-  )}&key=${apiKey}`;
+    const results = response.data.results;
 
-  const response = await axios.get(url);
+    if (results && results.length > 0) {
+      const { lat, lng } = results[0].geometry;
+      return { lat, lng };
+    }
 
-  if (response.data.status !== "OK") {
-    throw new Error("Invalid address");
+    return null; // location not found
+  } catch (error) {
+    console.error("Geocoding error:", error.message);
+    return null;
   }
-
-  const location = response.data.results[0].geometry.location;
-
-  return {
-    lat: location.lat,
-    lng: location.lng,
-  };
 };

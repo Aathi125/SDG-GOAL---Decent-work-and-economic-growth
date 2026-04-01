@@ -1,8 +1,6 @@
-# 🌍 SDG Goal - Decent Work and Economic Growth
+# SDG Goal - Decent Work and Economic Growth
 
-**BridgeRural: Connecting Organizations with Rural Youth for Internship Opportunities**
-
-A comprehensive platform that bridges the gap between organizations seeking talent and youth in rural or disadvantaged areas seeking internship opportunities. Built with a modern tech stack for scalability and performance.
+A platform connecting organizations with youth for internship opportunities. Built with Node.js, Express, MongoDB, and JWT authentication.
 
 ---
 
@@ -18,6 +16,7 @@ A comprehensive platform that bridges the gap between organizations seeking tale
 - [Environment Configuration](#environment-configuration)
 - [Authentication](#authentication)
 - [API Documentation](#api-documentation)
+- [Email Notifications](#email-notifications)
 - [Testing Guide](#testing-guide)
 - [Project Structure](#project-structure)
 - [Troubleshooting](#troubleshooting)
@@ -45,6 +44,8 @@ This platform enables:
 - ✅ Track internship views and applications
 - ✅ View dashboard analytics
 - ✅ Manage organization documents and verification
+- ✅ Email notifications for internship lifecycle events
+- ✅ Weekly activity digest emails
 
 ### For Youth
 - ✅ Create comprehensive profiles with skills and experience
@@ -69,10 +70,12 @@ This platform enables:
 - **Database:** MongoDB (Atlas or Local)
 - **Authentication:** JWT (JSON Web Tokens)
 - **Password Hashing:** bcryptjs
+- **Email Service:** Nodemailer (Gmail SMTP)
+- **Scheduled Jobs:** node-cron
 - **Payment Ready:** Stripe (optional)
 
 ### Frontend (To be implemented)
-- **Framework:** React.js 
+- **Framework:** React.js
 - **State Management:** Redux / Context API
 - **UI Library:** Material-UI / Tailwind CSS
 - **HTTP Client:** Axios
@@ -81,7 +84,7 @@ This platform enables:
 ### DevOps & Deployment
 - **Version Control:** Git
 - **API Testing:** Postman
-- **Deployment:** Node.js hosting ( Render)
+- **Deployment:** Node.js hosting (Render)
 
 ---
 
@@ -105,6 +108,7 @@ git --version
 - ✅ Git
 - ✅ Postman (for API testing)
 - ✅ VS Code or any code editor
+- ✅ Gmail account with 2-Step Verification enabled (for email notifications)
 
 ---
 
@@ -121,10 +125,10 @@ cd SDG-GOAL---Decent-work-and-economic-growth
 cd backend
 npm install
 cp .env.example .env
-# Edit .env with your MongoDB URI and JWT Secret
+# Edit .env with your MongoDB URI, JWT Secret, and Email credentials
 npm start
 
-# Backend should now be running on http://localhost:5001
+# Backend should now be running on http://localhost:5000
 
 # 3. Setup Frontend (when ready)
 cd ../frontend
@@ -159,27 +163,22 @@ npm install
 - jsonwebtoken
 - bcryptjs
 - cors (for frontend integration)
+- nodemailer (email notifications)
+- node-cron (weekly digest scheduler)
 
 ### Step 3: Create Environment File
 
-Create `.env` file in `backend/` directory:
-
 ```bash
 cp .env.example .env
-# OR manually create .env
 ```
 
-**Or manually paste into `backend/.env`:**
+**Paste into `backend/.env`:**
 
 ```env
 # Server Configuration
-PORT=5001
+PORT=5000
 
 # MongoDB Configuration
-# Option 1: Local MongoDB
-MONGO_URI=mongodb://localhost:27017/sdg-goal
-
-# Option 2: MongoDB Atlas (Recommended)
 MONGO_URI=mongodb+srv://USERNAME:PASSWORD@cluster0.mongodb.net/sdg-goal?retryWrites=true&w=majority
 
 # JWT Configuration
@@ -188,26 +187,19 @@ JWT_EXPIRES_IN=7d
 
 # Node Environment
 NODE_ENV=development
+
+# Email Configuration (Nodemailer + Gmail)
+EMAIL_USER=your.email@gmail.com
+EMAIL_PASS=your_16_char_app_password
 ```
 
 ### Step 4: Configure MongoDB Atlas (If Using Cloud)
 
 1. **Create Account** at https://www.mongodb.com/cloud/atlas
 2. **Create Cluster:** Free tier is fine for development
-3. **Add IP Whitelist:**
-   - Go to Network Access
-   - Click "Add IP Address"
-   - Add `0.0.0.0/0` (for development) or your IP
-4. **Create Database User:**
-   - Go to Database Access
-   - Click "Add New Database User"
-   - Username: `bridgeRural` (or your choice)
-   - Password: Strong password
-5. **Get Connection String:**
-   - Click "Connect"
-   - Select "Connect your application"
-   - Copy the MongoDB URI
-   - Replace `USERNAME`, `PASSWORD`, `cluster0` in your `.env`
+3. **Add IP Whitelist:** Go to Network Access → Add IP Address → `0.0.0.0/0`
+4. **Create Database User:** Go to Database Access → Add New Database User
+5. **Get Connection String:** Click Connect → Connect your application → Copy URI
 
 ### Step 5: Start Backend Server
 
@@ -217,11 +209,11 @@ npm start
 
 **Expected Output:**
 ```
+✅ Email service ready
+📅 Weekly email cron scheduled (Mondays 08:00)
+Server is running on port 5000
 MongoDB connected ✅
-Server is running on port 5001
 ```
-
-**Backend is now ready!** 🎉
 
 ---
 
@@ -230,7 +222,6 @@ Server is running on port 5001
 ### Step 1: Create React App
 
 ```bash
-# From project root
 npx create-react-app frontend
 cd frontend
 ```
@@ -239,20 +230,14 @@ cd frontend
 
 ```bash
 npm install axios react-router-dom redux react-redux redux-thunk
-npm install @mui/material @emotion/react @emotion/styled  # or use Tailwind
+npm install @mui/material @emotion/react @emotion/styled
 ```
 
 ### Step 3: Create `.env` File for Frontend
 
-```bash
-cd frontend
-# Create .env file
-```
-
-**Paste in `frontend/.env`:**
-
 ```env
-REACT_APP_API_BASE_URL=http://localhost:5001/api
+REACT_APP_API_BASE_URL=http://localhost:5000/api
+REACT_APP_ENV=development
 ```
 
 ### Step 4: Create API Service
@@ -266,7 +251,6 @@ const API = axios.create({
   baseURL: process.env.REACT_APP_API_BASE_URL,
 });
 
-// Add token to requests
 API.interceptors.request.use((config) => {
   const token = localStorage.getItem('token');
   if (token) {
@@ -294,12 +278,7 @@ export const AuthProvider = ({ children }) => {
 
   const register = async (name, email, password, role) => {
     try {
-      const response = await API.post('/auth/register', {
-        name,
-        email,
-        password,
-        role,
-      });
+      const response = await API.post('/auth/register', { name, email, password, role });
       setToken(response.data.token);
       setUser(response.data.user);
       localStorage.setItem('token', response.data.token);
@@ -335,23 +314,15 @@ export const AuthProvider = ({ children }) => {
 };
 ```
 
-### Step 6: Start Frontend
-
-```bash
-npm start
-```
-
-**Frontend runs on:** `http://localhost:3000`
-
 ---
 
 ## 🔐 Environment Configuration
 
-### Backend `.env` File 
+### Backend `.env` File
 
 ```env
 # Server
-PORT=5001
+PORT=5000
 NODE_ENV=development
 
 # Database
@@ -363,12 +334,16 @@ JWT_EXPIRES_IN=7d
 
 # CORS
 CORS_ORIGIN=http://localhost:3000
+
+# Email (Nodemailer + Gmail SMTP)
+EMAIL_USER=your.email@gmail.com
+EMAIL_PASS=abcdefghijklmnop
 ```
 
 ### Frontend `.env` File
 
 ```env
-REACT_APP_API_BASE_URL=http://localhost:5001/api
+REACT_APP_API_BASE_URL=http://localhost:5000/api
 REACT_APP_ENV=development
 ```
 
@@ -386,12 +361,10 @@ REACT_APP_ENV=development
 5. Backend verifies token and allows/denies access
 ```
 
-### Getting Started with Authentication
-
-#### 1. Register
+### Register
 
 ```bash
-curl -X POST http://localhost:5001/api/auth/register \
+curl -X POST http://localhost:5000/api/auth/register \
   -H "Content-Type: application/json" \
   -d '{
     "name": "Tech Corp",
@@ -401,10 +374,10 @@ curl -X POST http://localhost:5001/api/auth/register \
   }'
 ```
 
-#### 2. Login
+### Login
 
 ```bash
-curl -X POST http://localhost:5001/api/auth/login \
+curl -X POST http://localhost:5000/api/auth/login \
   -H "Content-Type: application/json" \
   -d '{
     "email": "admin@techcorp.com",
@@ -417,7 +390,7 @@ curl -X POST http://localhost:5001/api/auth/login \
 {
   "message": "Logged in successfully",
   "user": {
-    "id": "65abc123",
+    "id": "65abc123def456",
     "name": "Tech Corp",
     "email": "admin@techcorp.com",
     "role": "organization"
@@ -426,88 +399,236 @@ curl -X POST http://localhost:5001/api/auth/login \
 }
 ```
 
-#### 3. Use Token
+### Using Token in Requests
 
-Add to request headers:
+**Option 1: Bearer Token (Postman) — Recommended**
+1. Go to **Authorization** tab
+2. Select **Bearer Token** from Type dropdown
+3. Paste your token
+4. Click Send
+
+**Option 2: Headers Tab**
 ```
 Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+Content-Type: application/json
 ```
 
 ---
 
-## 📚 API Documentation
+## 🗺️ API Documentation
 
-### Base URL
+### Authentication Routes
+
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| POST | `/api/auth/register` | ❌ | Register new user |
+| POST | `/api/auth/login` | ❌ | Login user |
+| GET | `/api/auth/me` | ✅ | Get current user |
+| PUT | `/api/auth/update` | ✅ | Update profile |
+| DELETE | `/api/auth/:id` | ✅ | Delete user |
+
+### Internship Routes
+
+| Method | Endpoint | Auth | Role | Description |
+|--------|----------|------|------|-------------|
+| POST | `/api/internships` | ✅ | organization | Create internship |
+| GET | `/api/internships/my-internships` | ✅ | organization | Get own internships |
+| GET | `/api/internships/dashboard/stats` | ✅ | organization | Get dashboard stats |
+| GET | `/api/internships/search` | ❌ | public | Search internships |
+| GET | `/api/internships/:id` | ❌ | public | Get single internship |
+| PUT | `/api/internships/:id` | ✅ | organization | Update internship |
+| DELETE | `/api/internships/:id` | ✅ | organization | Delete internship |
+| PUT | `/api/internships/view/:id` | ❌ | public | Increment view count |
+
+### Youth Profile Routes
+
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| POST | `/api/profile` | ✅ | Create youth profile |
+| GET | `/api/profile/:userId` | ✅ | Get profile by user ID |
+| GET | `/api/profiles` | ✅ | Get all profiles |
+| PUT | `/api/profile/:userId` | ✅ | Update youth profile |
+| POST | `/api/profile/:userId/upload-cv` | ✅ | Upload CV/Documents |
+| DELETE | `/api/profile/:userId` | ✅ | Delete youth profile |
+
+### Organization Profile Routes
+
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| POST | `/api/organizations` | ✅ | Create organization profile |
+| GET | `/api/organizations/:id` | ✅ | Get organization profile |
+| GET | `/api/organizations` | ✅ | Get all organizations |
+| PUT | `/api/organizations/:id` | ✅ | Update organization profile |
+| POST | `/api/organizations/:id/documents` | ✅ | Upload documents |
+| DELETE | `/api/organizations/:id` | ✅ | Delete organization profile |
+
+### Email Test Routes (Development Only)
+
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| GET | `/api/email/test/ping` | ❌ | Verify SMTP connection |
+| POST | `/api/email/test/posted` | ❌ | Test internship posted email |
+| POST | `/api/email/test/closed` | ❌ | Test internship closed email |
+| POST | `/api/email/test/weekly` | ❌ | Test weekly digest email |
+
+> ⚠️ Email test routes are only available when `NODE_ENV=development`. They are automatically disabled in production.
+
+---
+
+## 📧 Email Notifications
+
+The platform sends automated email notifications to organizations using **Nodemailer** with Gmail SMTP. A **weekly digest** is scheduled using **node-cron**.
+
+### Setup
+
+#### Step 1 — Install packages
+
+```bash
+npm install nodemailer node-cron
 ```
-http://localhost:5001/api
+
+#### Step 2 — Enable Gmail App Password
+
+1. Go to [https://myaccount.google.com](https://myaccount.google.com)
+2. Click **Security** in the left sidebar
+3. Under **"How you sign in to Google"** → enable **2-Step Verification**
+4. Go to [https://myaccount.google.com/apppasswords](https://myaccount.google.com/apppasswords)
+5. Type `InternHub` in the App name box → click **Create**
+6. Copy the 16-character password shown (e.g. `abcdefghijklmnop`)
+
+#### Step 3 — Add to `.env`
+
+```env
+EMAIL_USER=your.email@gmail.com
+EMAIL_PASS=abcdefghijklmnop
 ```
 
-### Authentication Endpoints
+> Do NOT use your real Gmail password. The App Password is separate and can be revoked at any time.
 
-| Method | Endpoint | Auth | Description |
-|--------|----------|------|-------------|
-| POST | `/auth/register` | ❌ | Register new user |
-| POST | `/auth/login` | ❌ | Login user |
-| GET | `/auth/me` | ✅ | Get current user |
-| PUT | `/auth/update` | ✅ | Update profile |
-| DELETE | `/auth/:id` | ✅ | Delete user |
+#### Step 4 — Verify on server start
 
-### Internship Endpoints
+When the server starts you should see:
+```
+✅ Email service ready
+📅 Weekly email cron scheduled (Mondays 08:00)
+```
 
-| Method | Endpoint | Auth | Description |
-|--------|----------|------|-------------|
-| POST | `/internships` | ✅ org | Create internship |
-| GET | `/internships/my-internships` | ✅ org | Get my internships |
-| GET | `/internships/:id` | ❌ | Get single internship |
-| PUT | `/internships/:id` | ✅ org | Update internship |
-| DELETE | `/internships/:id` | ✅ org | Delete internship |
-| GET | `/internships/dashboard/stats` | ✅ org | Get stats |
-| GET | `/internships/search` | ❌ | Search internships |
+---
 
-### Youth Profile Endpoints
+### Email Triggers
 
-| Method | Endpoint | Auth | Description |
-|--------|----------|------|-------------|
-| POST | `/profile` | ✅ youth | Create profile |
-| GET | `/profile/:userId` | ✅ | Get profile |
-| GET | `/profiles` | ✅ | Get all profiles |
-| PUT | `/profile/:userId` | ✅ | Update profile |
-| POST | `/profile/:userId/upload-cv` | ✅ | Upload CV |
-| DELETE | `/profile/:userId` | ✅ | Delete profile |
+Emails are sent to the organization automatically at these moments:
 
-### Organization Endpoints
+| Trigger | Email Type | Timing |
+|---------|-----------|--------|
+| Create internship with `status: "Active"` | Internship published confirmation | Instantly |
+| Update internship: Draft → Active | Internship now live notification | Instantly |
+| Update internship: Active → Closed | Internship closed summary | Instantly |
+| Update internship: edit title/description/skills/etc | Fields updated notification | Instantly |
+| Every Monday at 08:00 AM | Weekly activity digest | Scheduled |
+| Create internship with `status: "Draft"` | Nothing | — |
+| Delete internship | Nothing | — |
 
-| Method | Endpoint | Auth | Description |
-|--------|----------|------|-------------|
-| POST | `/organizations` | ✅ org | Create org profile |
-| GET | `/organizations/:id` | ✅ | Get org profile |
-| GET | `/organizations` | ✅ | Get all organizations |
-| PUT | `/organizations/:id` | ✅ | Update org profile |
-| POST | `/organizations/:id/documents` | ✅ | Upload documents |
-| DELETE | `/organizations/:id` | ✅ | Delete org profile |
+---
+
+### Email Templates
+
+#### 1. Internship Published
+Sent when an internship goes Active. Includes title, location, duration, skills, and status.
+
+#### 2. Internship Closed
+Sent when an Active internship is closed. Includes total applicants and accepted count summary.
+
+#### 3. Internship Updated
+Sent when fields like title, description, location, duration, or skills are changed. Lists exactly which fields were updated.
+
+#### 4. Weekly Digest
+Sent every Monday at 08:00 AM to all organizations. Includes active listings count, total views, new applications, and overall acceptance rate.
+
+---
+
+### Testing Email Templates (Postman)
+
+Make sure your server is running, then:
+
+**Verify SMTP connection:**
+```http
+GET http://localhost:5000/api/email/test/ping
+```
+
+**Test internship posted email:**
+```http
+POST http://localhost:5000/api/email/test/posted
+Content-Type: application/json
+
+{ "to": "your.email@gmail.com" }
+```
+
+**Test internship closed email:**
+```http
+POST http://localhost:5000/api/email/test/closed
+Content-Type: application/json
+
+{ "to": "your.email@gmail.com" }
+```
+
+**Test weekly digest email:**
+```http
+POST http://localhost:5000/api/email/test/weekly
+Content-Type: application/json
+
+{ "to": "your.email@gmail.com" }
+```
+
+**Expected terminal output after each test:**
+```
+📧 Email sent → your.email@gmail.com | MessageId: <xxx@gmail.com>
+```
+
+---
+
+### Teammate Integration (Component 3 — Applications)
+
+The email service is designed to be shared across components. When the Applications component is built, it can import directly from the email utility:
+
+```javascript
+import { sendNewApplicationNotification } from "../utils/emailService.js";
+
+// Call after Application.create() succeeds:
+await sendNewApplicationNotification(
+  orgEmail,        // organization's email address
+  orgName,         // organization name
+  internshipTitle, // title of the internship applied to
+  applicantName,   // student's name
+  applicantEmail   // student's email
+);
+```
+
+---
+
+### New Files Added for Email Feature
+
+```
+backend/src/
+├── utils/
+│   └── emailService.js      ← Nodemailer transporter + all email templates
+├── jobs/
+│   └── weeklyCron.js        ← node-cron weekly digest scheduler
+└── routes/
+    └── emailTestRoute.js    ← Dev-only test endpoints (auto-disabled in production)
+```
 
 ---
 
 ## 🧪 Testing Guide
 
-### Using Postman
+### STEP 1: Register Organization
 
-#### 1. Create Collection
-
-1. Open Postman
-2. Create new collection: "SDG-Goal"
-3. Create environment: "Development"
-4. Add variables:
-   - `base_url`: `http://localhost:5001/api`
-   - `token`: (leave empty)
-
-#### 2. Test Sequence
-
-**Register Organization:**
-```
-POST {{base_url}}/auth/register
-
-Body:
+**In Postman:**
+- Method: **POST**
+- URL: `http://localhost:5000/api/auth/register`
+- Body (raw JSON):
+```json
 {
   "name": "Tech Corp",
   "email": "admin@techcorp.com",
@@ -516,36 +637,144 @@ Body:
 }
 ```
 
-**Tests Tab (Save token):**
-```javascript
-var jsonData = pm.response.json();
-pm.environment.set("token", jsonData.token);
-```
-
-**Create Internship:**
-```
-POST {{base_url}}/internships
-
-Headers:
-Authorization: Bearer {{token}}
-
-Body:
+**Expected Response (201):**
+```json
 {
-  "tittle": "Full Stack Developer",
-  "description": "Learn MERN stack",
-  "requiredSkills": ["JavaScript", "React", "Node.js"],
-  "location": "Bangalore",
+  "message": "User registered successfully",
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+}
+```
+✅ Copy the token and save it.
+
+---
+
+### STEP 2: Add Token to Postman Environment (Recommended)
+
+1. Top right → click **Environments** (gear icon)
+2. Add variable: `token` → paste the token value
+3. Now use `{{token}}` in all Authorization fields
+
+---
+
+### STEP 3: Create Internship
+
+- Method: **POST**
+- URL: `http://localhost:5000/api/internships`
+- Authorization: Bearer Token → `{{token}}`
+- Body (raw JSON):
+```json
+{
+  "tittle": "Full Stack Developer Internship",
+  "description": "Learn MERN stack - Node.js, React, MongoDB",
+  "requiredSkills": ["JavaScript", "React", "Node.js", "MongoDB"],
+  "requiredEducation": "Bachelor in Computer Science",
+  "location": "Bangalore, India",
   "duration": "3 months",
   "status": "Active"
 }
 ```
 
-**Get My Internships:** 
+**Expected Response (201):**
+```json
+{
+  "_id": "internship_123",
+  "tittle": "Full Stack Developer Internship",
+  "status": "Active",
+  "viewCount": 0
+}
 ```
-GET {{base_url}}/internships/my-internships
+✅ Save the `_id` for next steps.
+✅ Since status is `"Active"`, an email confirmation is sent to the organization instantly.
 
-Headers:
-Authorization: Bearer {{token}}
+---
+
+### STEP 4: Get My Internships
+
+- Method: **GET**
+- URL: `http://localhost:5000/api/internships/my-internships`
+- Authorization: Bearer Token → `{{token}}`
+
+**Expected Response (200):**
+```json
+{
+  "count": 1,
+  "internships": [{ "_id": "internship_123", "tittle": "Full Stack Developer Internship" }]
+}
+```
+
+---
+
+### STEP 5: Get Single Internship (Public)
+
+- Method: **GET**
+- URL: `http://localhost:5000/api/internships/internship_123`
+- Authorization: None (public route)
+
+---
+
+### STEP 6: Update Internship
+
+- Method: **PUT**
+- URL: `http://localhost:5000/api/internships/internship_123`
+- Authorization: Bearer Token → `{{token}}`
+- Body (raw JSON):
+```json
+{
+  "status": "Closed",
+  "description": "This internship is now full"
+}
+```
+✅ Since status changes from `Active → Closed`, a closed summary email is sent instantly.
+
+---
+
+### STEP 7: Get Dashboard Stats
+
+- Method: **GET**
+- URL: `http://localhost:5000/api/internships/dashboard/stats`
+- Authorization: Bearer Token → `{{token}}`
+
+**Expected Response (200):**
+```json
+{
+  "totalInternships": 1,
+  "activeInternships": 0,
+  "closedInternships": 1,
+  "totalViews": 0,
+  "totalApplicants": 0,
+  "acceptanceRate": "0"
+}
+```
+
+---
+
+### STEP 8: Delete Internship
+
+- Method: **DELETE**
+- URL: `http://localhost:5000/api/internships/internship_123`
+- Authorization: Bearer Token → `{{token}}`
+
+**Expected Response (200):**
+```json
+{
+  "message": "Internship deleted successfully"
+}
+```
+
+---
+
+### STEP 9: Test Email Notifications
+
+- Method: **POST**
+- URL: `http://localhost:5000/api/email/test/posted`
+- Body (raw JSON):
+```json
+{ "to": "your.email@gmail.com" }
+```
+
+**Expected terminal output:**
+```
+📧 Email sent → your.email@gmail.com | MessageId: <xxx@gmail.com>
 ```
 
 ---
@@ -553,237 +782,79 @@ Authorization: Bearer {{token}}
 ## 📁 Project Structure
 
 ```
-SDG-GOAL---Decent-work-and-economic-growth/
-├── backend/
-│   ├── src/
-│   │   ├── controllers/
-│   │   │   ├── authController.js
-│   │   │   ├── internshipController.js
-│   │   │   ├── organizationController.js
-│   │   │   └── profileController.js
-│   │   ├── middleware/
-│   │   │   ├── authMiddleware.js
-│   │   │   └── roleMiddleware.js
-│   │   ├── models/
-│   │   │   ├── User.js
-│   │   │   ├── internship.js
-│   │   │   ├── OrganizationProfile.js
-│   │   │   └── YouthProfile.js
-│   │   ├── routes/
-│   │   │   ├── auth.js
-│   │   │   ├── internshipRoute.js
-│   │   │   ├── organizationRoutes.js
-│   │   │   └── profile.js
-│   │   └── services/
-│   │       ├── internshipService.js
-│   │       ├── organizationService.js
-│   │       └── profileService.js
-│   ├── server.js
-│   ├── package.json
-│   └── .env
-│
-├── frontend/ (To be created)
-│   ├── src/
-│   │   ├── components/
-│   │   ├── pages/
-│   │   ├── services/
-│   │   ├── context/
-│   │   ├── App.js
-│   │   └── index.js
-│   ├── package.json
-│   └── .env
-│
-├── README.md
-└── .gitignore
+backend/src/
+├── controllers/
+│   ├── authController.js
+│   ├── internshipController.js
+│   ├── organizationController.js
+│   └── profileController.js
+├── middleware/
+│   ├── authMiddleware.js
+│   ├── fakeAuth.js
+│   └── roleMiddleware.js
+├── models/
+│   ├── User.js
+│   ├── internship.js
+│   ├── OrganizationProfile.js
+│   └── YouthProfile.js
+├── jobs/
+│   └── weeklyCron.js            ← NEW (email scheduler)
+├── routes/
+│   ├── auth.js
+│   ├── internshipRoute.js
+│   ├── organizationRoutes.js
+│   ├── profile.js
+│   └── emailTestRoute.js        ← NEW (dev only)
+├── services/
+│   ├── internshipService.js     ← UPDATED (email hooks added)
+│   ├── organizationService.js
+│   └── profileService.js
+└── utils/
+    ├── geocode.js
+    └── emailService.js          ← NEW (Nodemailer templates)
 ```
 
 ---
 
-## 🐛 Troubleshooting
+## ❌ Troubleshooting
 
-### MongoDB Connection Issues
-
-**Error:** `ENOTFOUND _mongodb._tcp.cluster0...`
-
-**Solutions:**
-1. Add IP to Atlas whitelist (0.0.0.0/0)
-2. Verify MONGO_URI in .env
-3. Check internet connection
-4. Ensure credentials are correct
-
-### JWT Token Issues
-
-**Error:** `Token is not valid`
-
-**Solutions:**
-1. Token might be expired (7 days)
-2. Re-login to get new token
-3. Check JWT_SECRET matches in .env
-4. Verify token format: `Bearer YOUR_TOKEN`
-
-### Port Already in Use
-
-**Error:** `EADDRINUSE: address already in use :::5001`
-
-**Solutions:**
-```bash
-# Kill process on port 5001 (Windows)
-netstat -ano | findstr :5001
-taskkill /PID <PID> /F
-
-# Or change PORT in .env
-PORT=5002
-```
-
-### CORS Issues (Frontend-Backend)
-
-**Error:** `Access to XMLHttpRequest has been blocked by CORS policy`
-
-**Solutions:**
-1. Add CORS to backend (install cors package):
-```javascript
-import cors from 'cors';
-app.use(cors({
-  origin: 'http://localhost:3000'
-}));
-```
-
-2. Verify API URL matches in frontend .env
+| Error | Cause | Fix |
+|-------|-------|-----|
+| `Invalid credentials` | Register first before login | Use `/api/auth/register` first |
+| `No token provided` | Missing Authorization header | Add `Authorization: Bearer TOKEN` |
+| `You do not have permission` | Wrong user role | Ensure role is `"organization"` for internship routes |
+| MongoDB Connection Error | Wrong URI or MongoDB not running | Check `.env` MONGO_URI |
+| Port already in use | Another process using the port | Change `PORT` in `.env` or kill the process |
+| `Missing credentials for "PLAIN"` | `EMAIL_USER`/`EMAIL_PASS` not loaded | Ensure `dotenv.config()` is called before imports in `server.js` |
+| `Invalid login` email error | Using real Gmail password | Use Gmail App Password from myaccount.google.com/apppasswords |
+| `App Passwords page not found` | 2-Step Verification not enabled | Enable it first at myaccount.google.com/security |
+| `535 Authentication Failed` | Wrong `EMAIL_USER` format | Use full Gmail address e.g. `name@gmail.com` |
 
 ---
 
-## 🔄 Deployment Checklist
+## 🎯 Quick Reference
 
-### Backend Deployment (Heroku/Render)
+**Base URL:** `http://localhost:5000`
 
-- [ ] Create account on Heroku/Render
-- [ ] Connect GitHub repository
-- [ ] Set environment variables in platform
-- [ ] Deploy branch
-- [ ] Test API endpoints
-
-### Frontend Deployment (Vercel/Netlify)
-
-- [ ] Build frontend: `npm run build`
-- [ ] Deploy to Vercel/Netlify
-- [ ] Update API_BASE_URL to production backend
-- [ ] Test all features
+| Action | Method | Endpoint | Auth |
+|--------|--------|----------|------|
+| Register | POST | `/api/auth/register` | ❌ |
+| Login | POST | `/api/auth/login` | ❌ |
+| Create Internship | POST | `/api/internships` | ✅ |
+| My Internships | GET | `/api/internships/my-internships` | ✅ |
+| Get Internship | GET | `/api/internships/:id` | ❌ |
+| Dashboard Stats | GET | `/api/internships/dashboard/stats` | ✅ |
+| Search | GET | `/api/internships/search` | ❌ |
+| Test Email | POST | `/api/email/test/posted` | ❌ |
 
 ---
 
-## 📝 Git Workflow
+## 📝 License
 
-### Cloning with Branches
-
-```bash
-# Clone repository
-git clone https://github.com/your-repo/SDG-GOAL.git
-
-# List branches
-git branch -a
-
-# Checkout auth_internship branch
-git checkout auth_internship
-
-# Or create new feature branch
-git checkout -b feature/your-feature-name
-
-# Make changes
-git add .
-git commit -m "Add feature: your description"
-git push origin feature/your-feature-name
-
-# Create Pull Request on GitHub
-```
+MIT License
 
 ---
 
-## 👥 User Roles
+## 📧 Support
 
-### 1. **Youth** (`role: "youth"`)
-- Can create profile
-- Can search internships
-- Can apply for internships
-- Can view own profile
-
-### 2. **Organization** (`role: "organization"`)
-- Can create organization profile
-- Can post internships
-- Can manage internships
-- Can view applications
-- Can track dashboard stats
-
-### 3. **Admin** (`role: "admin"`)
-- Can manage all users
-- Can verify organizations
-- Can monitor platform
-- Can delete content
-- Can view all profiles
-
----
-
-## 🎓 Learning Resources
-
-- **Node.js:** https://nodejs.org/en/docs/
-- **Express:** https://expressjs.com/en/4x/api.html
-- **MongoDB:** https://docs.mongodb.com/
-- **JWT:** https://jwt.io/
-- **React:** https://react.dev/learn
-
----
-
-## 📞 Support & Contact
-
-For issues or questions:
-- Open a GitHub issue
-- Contact development team
-- Check documentation in README
-
----
-
-## 📄 License
-
-MIT License - Free to use and modify
-
----
-
-## ✅ Quick Reference Commands
-
-```bash
-# Backend
-cd backend
-npm install          # Install dependencies
-npm start            # Start server (port 5001)
-npm run dev          # Start with nodemon
-
-# Frontend
-cd frontend
-npm install          # Install dependencies
-npm start            # Start app (port 3000)
-npm run build        # Build for production
-npm test             # Run tests
-
-# Git
-git status           # Check status
-git add .            # Stage changes
-git commit -m "msg"  # Commit
-git push             # Push to remote
-git pull             # Pull from remote
-```
-
----
-
-## 🚀 Next Steps
-
-1. **Clone the repository**
-2. **Setup backend** → Run on port 5001
-3. **Test API** → Use Postman
-4. **Setup frontend** → Create React app
-5. **Connect frontend** → Update API URLs
-6. **Deploy** → Host on cloud
-
----
-
-**Happy Coding! 🎉**
- 
-*SDG Goal 8: Decent Work and Economic Growth*
+For issues or questions, contact the development team.

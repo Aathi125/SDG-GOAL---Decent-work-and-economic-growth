@@ -165,4 +165,3 @@ export const createVersionSnapshot = (profileDoc) => {
 
   return snapshot;
 };
-

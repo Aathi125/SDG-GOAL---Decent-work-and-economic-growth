@@ -362,4 +362,7 @@ export const deleteProfile = async (req, res) => {
     console.error("Error in deleteProfile:", error);
     return res.status(500).json({ message: "Server error" });
   }
+
 };
+
+

@@ -350,4 +350,8 @@ export const deleteOrganizationProfile = async (req, res) => {
     console.error("Error in deleteOrganizationProfile:", error);
     return res.status(500).json({ message: "Server error" });
   }
+
 };
+
+
+
