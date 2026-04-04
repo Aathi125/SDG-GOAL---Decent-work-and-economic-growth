@@ -1,103 +1,127 @@
-// authController.js
-import User from '../models/userModel.js'; // Mongoose User model
 import jwt from 'jsonwebtoken';
+import User from '../models/userModel.js';
+import {
+  validateConfirmPassword,
+  validateEmail,
+  validateName,
+  validatePassword,
+} from '../utils/validateAuth.js';
 
-// Helper: generate JWT
-const generateToken = (user) => {
-  return jwt.sign(
-    { id: user._id, role: user.role },
-    process.env.JWT_SECRET || 'secretkey',
-    { expiresIn: '1d' }
-  );
-};
+const signToken = (user) =>
+  jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET || 'dev-secret-change-me', {
+    expiresIn: '7d',
+  });
 
-// ================================
-// Register user (youth or organization)
-// ================================
-export const register = async (req, res) => {
+export const registerUser = async (req, res) => {
   try {
-    const { name, email, password, role, skills } = req.body;
+    const { username, email, password, confirmPassword } = req.body;
 
-    if (!name || !email || !password || !role) {
-      return res.status(400).json({ message: 'Missing required fields' });
-    }
+    const nameErr = validateName(username, 'Username');
+    if (nameErr) return res.status(400).json({ message: nameErr });
 
-    // Check if user exists
-    const existingUser = await User.findOne({ email });
-    if (existingUser) {
-      return res.status(400).json({ message: 'User already exists' });
-    }
+    const emailErr = validateEmail(email);
+    if (emailErr) return res.status(400).json({ message: emailErr });
 
-    // Create user
+    const passErr = validatePassword(password);
+    if (passErr) return res.status(400).json({ message: passErr });
+
+    const matchErr = validateConfirmPassword(password, confirmPassword);
+    if (matchErr) return res.status(400).json({ message: matchErr });
+
+    const exists = await User.findOne({ email: email.trim().toLowerCase() });
+    if (exists) return res.status(400).json({ message: 'Email is already registered' });
+
     const user = await User.create({
-      name,
-      email,
+      name: username.trim(),
+      email: email.trim().toLowerCase(),
       password,
-      role,
-      skills: skills || [],
+      role: 'user',
     });
 
     res.status(201).json({
-      message: 'User registered successfully',
-      token: generateToken(user),
+      token: signToken(user),
       user: {
         _id: user._id,
         name: user.name,
         email: user.email,
         role: user.role,
-        skills: user.skills,
       },
     });
-  } catch (err) {
-    res.status(500).json({ message: 'Registration failed', error: err.message });
+  } catch (e) {
+    res.status(500).json({ message: e.message || 'Registration failed' });
   }
 };
 
-// ================================
-// Login user
-// ================================
+export const registerOrganizer = async (req, res) => {
+  try {
+    const { businessName, email, password, confirmPassword } = req.body;
+
+    const nameErr = validateName(businessName, 'Business name');
+    if (nameErr) return res.status(400).json({ message: nameErr });
+
+    const emailErr = validateEmail(email);
+    if (emailErr) return res.status(400).json({ message: emailErr });
+
+    const passErr = validatePassword(password);
+    if (passErr) return res.status(400).json({ message: passErr });
+
+    const matchErr = validateConfirmPassword(password, confirmPassword);
+    if (matchErr) return res.status(400).json({ message: matchErr });
+
+    const exists = await User.findOne({ email: email.trim().toLowerCase() });
+    if (exists) return res.status(400).json({ message: 'Email is already registered' });
+
+    const user = await User.create({
+      name: businessName.trim(),
+      email: email.trim().toLowerCase(),
+      password,
+      role: 'organizer',
+    });
+
+    res.status(201).json({
+      token: signToken(user),
+      user: {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+      },
+    });
+  } catch (e) {
+    res.status(500).json({ message: e.message || 'Registration failed' });
+  }
+};
+
 export const login = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    if (!email || !password) {
-      return res.status(400).json({ message: 'Email and password required' });
-    }
+    const emailErr = validateEmail(email);
+    if (emailErr) return res.status(400).json({ message: emailErr });
 
-    const user = await User.findOne({ email });
-    if (!user) {
-      return res.status(401).json({ message: 'Invalid credentials' });
-    }
+    if (!password) return res.status(400).json({ message: 'Password is required' });
 
-    const isMatch = await user.matchPassword(password);
-    if (!isMatch) {
-      return res.status(401).json({ message: 'Invalid credentials' });
-    }
+    const user = await User.findOne({ email: email.trim().toLowerCase() });
+    if (!user) return res.status(401).json({ message: 'Invalid email or password' });
 
-    res.status(200).json({
-      message: 'Login successful',
-      token: generateToken(user),
+    const ok = await user.matchPassword(password);
+    if (!ok) return res.status(401).json({ message: 'Invalid email or password' });
+
+    res.json({
+      token: signToken(user),
       user: {
         _id: user._id,
         name: user.name,
         email: user.email,
         role: user.role,
-        skills: user.skills,
       },
     });
-  } catch (err) {
-    res.status(500).json({ message: 'Login failed', error: err.message });
+  } catch (e) {
+    res.status(500).json({ message: e.message || 'Login failed' });
   }
 };
 
-// ================================
-// Get current user profile
-// ================================
 export const getMe = async (req, res) => {
-  try {
-    const user = await User.findById(req.user.id).select('-password');
-    res.status(200).json(user);
-  } catch (err) {
-    res.status(500).json({ message: 'Failed to load profile', error: err.message });
-  }
+  const user = await User.findById(req.user._id).select('-password');
+  res.json(user);
 };

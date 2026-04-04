@@ -1,15 +1,17 @@
-// authRoutes.js
-import express from "express";
-import { register, login, getMe } from "../controllers/authController.js";
-import { protect } from "../middleware/authMiddleware.js";
+import express from 'express';
+import {
+  getMe,
+  login,
+  registerOrganizer,
+  registerUser,
+} from '../controllers/authController.js';
+import { protect } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
-// Public routes
-router.post("/register", register);
-router.post("/login", login);
+router.post('/register/user', registerUser);
+router.post('/register/organizer', registerOrganizer);
+router.post('/login', login);
+router.get('/me', protect, getMe);
 
-// Protected route
-router.get("/me", protect, getMe);
-
-export default router; // ✅ ES Module default export
+export default router;

@@ -11,30 +11,24 @@ const userSchema = new mongoose.Schema(
       lowercase: true,
       trim: true,
     },
-    password: { type: String, required: true },
+    password: { type: String, required: true, minlength: 8 },
     role: {
       type: String,
-      enum: ['admin', 'organization', 'youth'],
-      default: 'youth',
+      enum: ['user', 'organizer'],
       required: true,
     },
-    skills: [{ type: String, trim: true }],
   },
-  { timestamps: true }
+  { timestamps: true, bufferCommands: false }
 );
 
 userSchema.pre('save', async function preSave() {
   if (!this.isModified('password')) return;
-
   const salt = await bcrypt.genSalt(10);
   this.password = await bcrypt.hash(this.password, salt);
 });
 
-userSchema.methods.matchPassword = function matchPassword(enteredPassword) {
-  return bcrypt.compare(enteredPassword, this.password);
+userSchema.methods.matchPassword = function matchPassword(entered) {
+  return bcrypt.compare(entered, this.password);
 };
 
-const User = mongoose.model('User', userSchema);
-
-export default User;
-
+export default mongoose.model('User', userSchema);
