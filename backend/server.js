@@ -1,6 +1,13 @@
 import express from "express";
 import mongoose from "mongoose";
 import dotenv from "dotenv";
+import cors from "cors";
+
+// Load environment variables FIRST, before importing other modules
+dotenv.config();
+
+// Import routes
+import applicationRoutes  from './src/routes/applicationRoutes.js';
 import authRoutes         from "./src/routes/auth.js";
 import profileRoutes      from "./src/routes/profile.js";
 import organizationRoutes from "./src/routes/organizationRoutes.js";
@@ -27,10 +34,13 @@ app.use("/api/auth",        authRoutes);
 app.use("/api",             profileRoutes);
 app.use("/api",             organizationRoutes);
 app.use("/api/internships", internshipRoutes);
+app.use("/api/applications", applicationRoutes);
 
 if (process.env.NODE_ENV !== "production") {   
   app.use("/api/email/test", emailTestRoutes);  
-}                                               
+}
+
+//start the serve                                              
 
 const PORT = process.env.PORT || 5001;
 app.listen(PORT, () => {
