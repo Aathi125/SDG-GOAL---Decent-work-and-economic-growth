@@ -120,7 +120,7 @@ export const applyForInternship = async (req, res) => {
 
     // Increment applicant count
     await Internship.findByIdAndUpdate(internshipId, {
-      $inc: { applicantCount: 1 }
+      $inc: { totalapplicants: 1 }
     });
 
     res.status(201).json({
@@ -313,7 +313,7 @@ export const withdrawApplication = async (req, res) => {
 
     // Decrement applicant count
     await Internship.findByIdAndUpdate(application.internshipId, {
-      $inc: { applicantCount: -1 }
+      $inc: { totalapplicants: -1 }
     });
 
     res.json({

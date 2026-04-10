@@ -99,10 +99,11 @@ export default function InternshipAnalyticsPage() {
   if (!internship) return null
 
   const {
-    tittle, description, location, duration, status,
-    requiredSkills = [], viewCount = 0,
-    totalApplicants = 0, acceptedCount = 0, createdAt,
-  } = internship
+  tittle, description, location, duration, status,
+  requiredSkills = [], viewCount = 0,
+  totalapplicants: totalApplicants = 0,
+  acceptedCount = 0, createdAt,
+} = internship
 
   const series        = buildTimeSeries(internship)
   const conversionRate = totalApplicants > 0
