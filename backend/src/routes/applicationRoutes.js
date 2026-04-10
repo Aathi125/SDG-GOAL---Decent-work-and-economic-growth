@@ -8,8 +8,12 @@ import {
   updateApplication
 } from '../controllers/applicationController.js';
 import uploadCV, { flexibleUpload } from '../middleware/uploadCV.js';
+import { protect } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
+
+// Apply auth middleware to all routes
+router.use(protect);
 
 router.post('/apply/:internshipId', flexibleUpload, applyForInternship);
 router.get('/my-applications', getMyApplications);
