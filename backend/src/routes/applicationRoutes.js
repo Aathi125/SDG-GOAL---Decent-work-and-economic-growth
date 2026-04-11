@@ -5,10 +5,11 @@ import {
   getApplicationById,
   withdrawApplication,
   checkApplicationStatus,
-  updateApplication
+  updateApplication,
+  getApplicationsByInternship
 } from '../controllers/applicationController.js';
 import uploadCV, { flexibleUpload } from '../middleware/uploadCV.js';
-import { protect } from '../middleware/authMiddleware.js';
+import { protect, authorizeRoles } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 
@@ -22,4 +23,10 @@ router.get('/:id', getApplicationById);
 router.put('/:id', flexibleUpload, updateApplication);
 router.delete('/:id', withdrawApplication);
 
+// GET /api/applications/internship/:internshipId  (org only)
+router.get('/internship/:internshipId',
+  protect,
+  authorizeRoles("organization"),
+  getApplicationsByInternship
+)
 export default router;

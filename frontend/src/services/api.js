@@ -41,6 +41,7 @@ export const internshipsAPI = {
   delete:        (id)     => api.delete(`/internships/${id}`),
   incrementView: (id)     => api.put(`/internships/view/${id}`),
   dashboard:     ()       => api.get('/internships/dashboard/stats'),
+  getApplicationsByInternship: (id) => api.get(`/applications/internship/${id}`),
 }
 
 // ── Applications ─────────────────────────────────────────────────────────────

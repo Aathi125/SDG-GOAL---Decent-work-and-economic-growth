@@ -290,3 +290,16 @@ export const withdrawApplication = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
+// ── GET /api/applications/internship/:internshipId ────────────────────────────────
+export const getApplicationsByInternship = async (req, res) => {
+  try {
+    const { internshipId } = req.params
+    const applications = await Application.find({ internshipId })
+      .select('name email phoneNumber status eligibilityScore appliedDate cvUrl')
+      .sort({ appliedDate: -1 })
+    res.json({ success: true, data: applications })
+  } catch (error) {
+    res.status(500).json({ message: error.message })
+  }
+}
