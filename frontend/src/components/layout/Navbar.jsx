@@ -3,7 +3,7 @@ import { Link, NavLink, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import {
   Briefcase, Menu, X, ChevronDown,
-  LayoutDashboard, LogOut, User, PlusCircle, Building2
+  LayoutDashboard, LogOut, User, PlusCircle, Building2, GraduationCap
 } from 'lucide-react'
 
 export default function Navbar() {
@@ -35,16 +35,40 @@ export default function Navbar() {
           {/* Desktop nav */}
           <nav className="hidden md:flex items-center gap-1">
             {!isAdmin && (
-              <NavLink
-                to="/internships"
-                className={({ isActive }) =>
-                  `px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
-                    isActive ? 'text-brand' : 'text-slate-600 hover:text-navy-900'
-                  }`
-                }
-              >
-                Browse Jobs
-              </NavLink>
+              <>
+                <NavLink
+                  to="/internships"
+                  className={({ isActive }) =>
+                    `px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+                      isActive ? 'text-brand' : 'text-slate-600 hover:text-navy-900'
+                    }`
+                  }
+                >
+                  Browse Jobs
+                </NavLink>
+                <NavLink
+                  to="/skill-development"
+                  className={({ isActive }) =>
+                    `px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+                      isActive ? 'text-brand' : 'text-slate-600 hover:text-navy-900'
+                    }`
+                  }
+                >
+                  Browse Courses
+                </NavLink>
+                {user && !isOrg && (
+                  <NavLink
+                    to="/applications"
+                    className={({ isActive }) =>
+                      `px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+                        isActive ? 'text-brand' : 'text-slate-600 hover:text-navy-900'
+                      }`
+                    }
+                  >
+                    My Applications
+                  </NavLink>
+                )}
+              </>
             )}
 
             {isAdmin && (
@@ -73,19 +97,6 @@ export default function Navbar() {
               </NavLink>
             )}
 
-            {user && !isOrg && (
-              <NavLink
-                to="/applications"
-                className={({ isActive }) =>
-                  `px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
-                    isActive ? 'text-brand' : 'text-slate-600 hover:text-navy-900'
-                  }`
-                }
-              >
-                My Applications
-              </NavLink>
-            )}
-
             {isOrg && (
               <>
                 <NavLink
@@ -108,6 +119,16 @@ export default function Navbar() {
                   }
                 >
                   Post Internship
+                </NavLink>
+                <NavLink
+                  to="/organization/courses"
+                  className={({ isActive }) =>
+                    `px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+                      isActive ? 'text-brand' : 'text-slate-600 hover:text-navy-900'
+                    }`
+                  }
+                >
+                  My courses
                 </NavLink>
               </>
             )}
@@ -185,12 +206,33 @@ export default function Navbar() {
                           <Building2 size={15} /> Organization Profile
                         </Link>
 
+                        <Link
+                          to="/organization/courses"
+                          onClick={() => setDropOpen(false)}
+                          className="flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-slate-50"
+                        >
+                          <GraduationCap size={15} /> My courses
+                        </Link>
+
                         <div className="border-t my-1" />
                       </>
                     )}
 
                     {!isOrg && !isAdmin && (
                       <>
+                        <p className="px-4 pt-2 pb-1 text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+                          Courses
+                        </p>
+                        <Link
+                          to="/skill-development"
+                          onClick={() => setDropOpen(false)}
+                          className="flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-slate-50"
+                        >
+                          <GraduationCap size={15} /> Browse courses
+                        </Link>
+
+                        <div className="border-t my-1" />
+
                         <Link
                           to="/applications"
                           onClick={() => setDropOpen(false)}
@@ -240,6 +282,12 @@ export default function Navbar() {
             Browse Jobs
           </MobileLink>
 
+          {!isAdmin && (
+            <MobileLink to="/skill-development" onClick={() => setMobileOpen(false)}>
+              Browse Courses
+            </MobileLink>
+          )}
+
           {isAdmin && (
             <MobileLink to="/admin/organizations" onClick={() => setMobileOpen(false)}>
               Admin Dashboard
@@ -256,6 +304,9 @@ export default function Navbar() {
               </MobileLink>
               <MobileLink to="/organization" onClick={() => setMobileOpen(false)}>
                 Organization Profile
+              </MobileLink>
+              <MobileLink to="/organization/courses" onClick={() => setMobileOpen(false)}>
+                My courses
               </MobileLink>
             </>
           )}
